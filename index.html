@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zintillex — 3D File Format</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --red: #e94560;
+    --dark: #111;
+    --mid: #444;
+    --light: #f7f5f2;
+    --white: #fff;
+    --border: #e8e4df;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--white);
+    color: var(--dark);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    overflow-x: hidden;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 48px;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    letter-spacing: -0.5px;
+    color: var(--dark);
+    text-decoration: none;
+  }
+  .nav-logo span { color: var(--red); }
+  .nav-links { display: flex; gap: 32px; list-style: none; }
+  .nav-links a {
+    font-size: 13px; font-weight: 400; color: var(--mid);
+    text-decoration: none; letter-spacing: 0.02em;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--dark); }
+  .nav-cta {
+    background: var(--dark); color: var(--white);
+    padding: 9px 22px; border-radius: 99px;
+    font-size: 13px; font-weight: 400;
+    text-decoration: none;
+    transition: background 0.2s;
+  }
+  .nav-cta:hover { background: var(--red); }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center;
+    padding: 120px 24px 80px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-bg {
+    position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 50% 60%, rgba(233,69,96,0.06) 0%, transparent 70%),
+      repeating-linear-gradient(0deg, transparent, transparent 39px, var(--border) 40px),
+      repeating-linear-gradient(90deg, transparent, transparent 39px, var(--border) 40px);
+  }
+  .hero-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; font-weight: 300;
+    letter-spacing: 0.15em;
+    color: var(--red);
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    opacity: 0; animation: fadeUp 0.6s 0.1s forwards;
+    position: relative; z-index: 1;
+  }
+  .hero h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(56px, 10vw, 120px);
+    line-height: 0.95;
+    letter-spacing: -2px;
+    color: var(--dark);
+    margin-bottom: 8px;
+    opacity: 0; animation: fadeUp 0.6s 0.2s forwards;
+    position: relative; z-index: 1;
+  }
+  .hero h1 em {
+    font-style: italic;
+    color: var(--red);
+  }
+  .hero-sub {
+    font-size: clamp(15px, 2vw, 18px);
+    color: var(--mid);
+    max-width: 480px;
+    line-height: 1.7;
+    margin: 28px auto 48px;
+    font-weight: 300;
+    opacity: 0; animation: fadeUp 0.6s 0.3s forwards;
+    position: relative; z-index: 1;
+  }
+  .hero-actions {
+    display: flex; gap: 14px; align-items: center; justify-content: center; flex-wrap: wrap;
+    opacity: 0; animation: fadeUp 0.6s 0.4s forwards;
+    position: relative; z-index: 1;
+  }
+  .btn-primary {
+    background: var(--dark); color: var(--white);
+    padding: 14px 32px; border-radius: 99px;
+    font-size: 14px; font-weight: 400;
+    text-decoration: none;
+    transition: background 0.2s, transform 0.15s;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .btn-primary:hover { background: var(--red); transform: translateY(-1px); }
+  .btn-secondary {
+    border: 1px solid var(--border); color: var(--dark);
+    padding: 14px 32px; border-radius: 99px;
+    font-size: 14px; font-weight: 400;
+    text-decoration: none;
+    transition: border-color 0.2s, transform 0.15s;
+  }
+  .btn-secondary:hover { border-color: var(--dark); transform: translateY(-1px); }
+
+  /* FILE BADGE */
+  .hero-file {
+    margin-top: 72px;
+    display: inline-flex; align-items: center; gap: 12px;
+    background: var(--light); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 20px;
+    opacity: 0; animation: fadeUp 0.6s 0.5s forwards;
+    position: relative; z-index: 1;
+  }
+  .file-icon {
+    width: 36px; height: 44px;
+    background: var(--red); border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px; color: white; font-style: italic;
+  }
+  .file-info { text-align: left; }
+  .file-name { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--dark); }
+  .file-desc { font-size: 11px; color: var(--mid); margin-top: 2px; }
+
+  /* SECTION */
+  section { padding: 100px 24px; max-width: 1100px; margin: 0 auto; }
+
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; letter-spacing: 0.15em;
+    color: var(--red); text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+  .section-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(36px, 5vw, 60px);
+    line-height: 1.05; letter-spacing: -1px;
+    color: var(--dark); margin-bottom: 20px;
+  }
+  .section-body {
+    font-size: 16px; color: var(--mid);
+    line-height: 1.8; max-width: 560px;
+  }
+
+  /* FEATURES */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-top: 60px;
+  }
+  .feature-card {
+    background: var(--white);
+    padding: 40px 36px;
+    transition: background 0.2s;
+  }
+  .feature-card:hover { background: var(--light); }
+  .feature-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px; color: var(--red);
+    margin-bottom: 20px; letter-spacing: 0.1em;
+  }
+  .feature-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px; color: var(--dark);
+    margin-bottom: 12px;
+  }
+  .feature-desc { font-size: 14px; color: var(--mid); line-height: 1.7; }
+
+  /* HOW IT WORKS */
+  .steps { margin-top: 60px; display: flex; flex-direction: column; gap: 0; }
+  .step {
+    display: flex; align-items: flex-start; gap: 32px;
+    padding: 36px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .step:last-child { border-bottom: none; }
+  .step-num {
+    font-family: 'DM Serif Display', serif;
+    font-size: 48px; color: var(--border);
+    line-height: 1; min-width: 60px;
+    transition: color 0.2s;
+  }
+  .step:hover .step-num { color: var(--red); }
+  .step-title { font-size: 18px; font-weight: 500; color: var(--dark); margin-bottom: 8px; }
+  .step-desc { font-size: 14px; color: var(--mid); line-height: 1.7; }
+  .step-code {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px; color: var(--red);
+    background: var(--light); border: 1px solid var(--border);
+    border-radius: 6px; padding: 8px 14px;
+    margin-top: 12px; display: inline-block;
+  }
+
+  /* DOWNLOAD */
+  .download-section {
+    background: var(--dark);
+    border-radius: 20px;
+    padding: 80px 60px;
+    text-align: center;
+    margin: 0 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .download-section::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 50% 80% at 50% 100%, rgba(233,69,96,0.2) 0%, transparent 70%);
+  }
+  .download-section * { position: relative; z-index: 1; }
+  .download-section .section-label { color: rgba(233,69,96,0.8); }
+  .download-section .section-title { color: var(--white); margin: 0 auto 16px; }
+  .download-section .section-body { color: rgba(255,255,255,0.5); margin: 0 auto 40px; }
+  .download-badges {
+    display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;
+  }
+  .badge {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 99px; padding: 10px 20px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px; color: rgba(255,255,255,0.6);
+  }
+
+  /* FOOTER */
+  footer {
+    padding: 48px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-top: 1px solid var(--border);
+    margin-top: 100px;
+  }
+  .footer-logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px; color: var(--dark);
+  }
+  .footer-logo span { color: var(--red); }
+  .footer-copy { font-size: 12px; color: var(--mid); font-family: 'DM Mono', monospace; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 640px) {
+    nav { padding: 16px 20px; }
+    .nav-links { display: none; }
+    .download-section { padding: 48px 24px; margin: 0 12px; }
+    footer { flex-direction: column; gap: 12px; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#" class="nav-logo">Zintilex<span>.</span></a>
+  <ul class="nav-links">
+    <li><a href="#about">About</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#howto">How it works</a></li>
+    <li><a href="#download">Download</a></li>
+  </ul>
+  <a href="#download" class="nav-cta">Get Zintillex</a>
+</nav>
+
+<div class="hero">
+  <div class="hero-bg"></div>
+  <p class="hero-tag">Open 3D File Format</p>
+  <h1>The <em>.zint</em><br>file format.</h1>
+  <p class="hero-sub">A self-contained 3D bundle format that stores models, textures, and assets in a single portable file. Works with Blender. Opens anywhere.</p>
+  <div class="hero-actions">
+    <a href="#download" class="btn-primary">Download app ↓</a>
+    <a href="#about" class="btn-secondary">Learn more</a>
+  </div>
+  <div class="hero-file">
+    <div class="file-icon">Z</div>
+    <div class="file-info">
+      <div class="file-name">pot.zint</div>
+      <div class="file-desc">3D Bundle · Self-contained · 48 KB</div>
+    </div>
+  </div>
+</div>
+
+<section id="about">
+  <p class="section-label">What is Zintillex</p>
+  <h2 class="section-title">A file format built<br>for 3D artists.</h2>
+  <p class="section-body">Zintillex is a new open 3D bundle format. Unlike FBX or OBJ, a <code>.zint</code> file embeds everything — geometry, metadata, assets — directly inside a single portable file. No broken links. No missing textures. Just one file.</p>
+</section>
+
+<section id="features" style="padding-top: 0;">
+  <div class="features-grid">
+    <div class="feature-card">
+      <p class="feature-num">01</p>
+      <h3 class="feature-title">Self-contained</h3>
+      <p class="feature-desc">All 3D data is encoded and embedded inside the .zint file. Send it anywhere and it just works.</p>
+    </div>
+    <div class="feature-card">
+      <p class="feature-num">02</p>
+      <h3 class="feature-title">Blender native</h3>
+      <p class="feature-desc">Import and export .zint files directly from Blender 4.x with the official add-on.</p>
+    </div>
+    <div class="feature-card">
+      <p class="feature-num">03</p>
+      <h3 class="feature-title">Open format</h3>
+      <p class="feature-desc">Plain text based. Human readable. Anyone can build tools that read and write .zint files.</p>
+    </div>
+    <div class="feature-card">
+      <p class="feature-num">04</p>
+      <h3 class="feature-title">Viewer app</h3>
+      <p class="feature-desc">The Zintillex app lets you browse, preview, and manage your .zint bundles on Windows and Linux.</p>
+    </div>
+  </div>
+</section>
+
+<section id="howto">
+  <p class="section-label">How it works</p>
+  <h2 class="section-title">Simple by design.</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div>
+        <p class="step-title">Model in Blender</p>
+        <p class="step-desc">Create your 3D model in Blender as you normally would.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div>
+        <p class="step-title">Export as .zint</p>
+        <p class="step-desc">Use File → Export → Zintillex (.zint) to bundle everything into one file.</p>
+        <span class="step-code">File → Export → Zintillex (.zint)</span>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div>
+        <p class="step-title">Share it</p>
+        <p class="step-desc">Send the single .zint file to anyone. They can open it in the Zintillex viewer or import it back into Blender.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div>
+        <p class="step-title">Or use the CLI</p>
+        <p class="step-desc">Power users can create and manage .zint bundles directly from the terminal.</p>
+        <span class="step-code">zint new MyProject</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div id="download" style="max-width:1100px; margin: 0 auto; padding: 0 0 100px;">
+  <div class="download-section">
+    <p class="section-label">Download</p>
+    <h2 class="section-title">Get Zintillex.</h2>
+    <p class="section-body">Download the viewer app, the Blender add-on, and the CLI tool — all free.</p>
+    <div class="download-badges">
+      <span class="badge">Windows .exe</span>
+      <span class="badge">Linux AppImage</span>
+      <span class="badge">Blender 4.x add-on</span>
+      <span class="badge">CLI tool</span>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-logo">Zintilex<span>.</span></div>
+  <div class="footer-copy">© 2026 Zintillex · Open Format</div>
+</footer>
+
+</body>
+</html>
